@@ -1,0 +1,10 @@
+[project]
+name = "the-code-cartographer"
+version = "0.1.0"
+description = "AI Agents for codebase mapping"
+dependencies = [
+    "pydantic",
+    "networkx",
+    "langgraph",
+    "sqlglot"
+]
