@@ -1,1 +1,1 @@
-from .nodes import ModuleNode
+from .nodes import ModuleNode, DatasetNode

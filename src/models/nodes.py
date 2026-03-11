@@ -12,3 +12,9 @@ class ModuleNode(BaseModel):
     complexity: int = 0
     git_commits: int = 0
     is_high_velocity: bool = False
+
+class DatasetNode(BaseModel):
+    id: str
+    name: str
+    type: str  # e.g., table, file, topic
+    source_file: str

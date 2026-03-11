@@ -35,3 +35,10 @@ class KnowledgeGraph:
         data = nx.node_link_data(self.graph)
         with open(path, 'w', encoding='utf-8') as f:
             json.dump(data, f, indent=2)
+
+    def load_graph(self, path: str):
+        if not os.path.exists(path):
+            return
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            self.graph = nx.node_link_graph(data)

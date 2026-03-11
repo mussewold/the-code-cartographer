@@ -185,6 +185,69 @@ def visualize_lineage():
         console.print("[yellow]Make sure 'graphviz' system package is installed (e.g., sudo apt install graphviz)[/yellow]")
 
 @cli.command()
+def lineage_summary():
+    """Prints analytical insights about the data lineage graph."""
+    import json
+    import networkx as nx
+    from src.graph.lineage_graph import DataLineageGraph
+    
+    graph_path = ".cartography/lineage_graph.json"
+    if not os.path.exists(graph_path):
+        console.print(f"[bold red]Lineage graph not found at {graph_path}. Run 'analyze' first.[/bold red]")
+        return
+        
+    with open(graph_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        
+    dlg = DataLineageGraph(nx.node_link_graph(data))
+    
+    sources = dlg.find_sources()
+    sinks = dlg.find_sinks()
+    
+    console.print(f"\n[bold cyan]Data Lineage Insights[/bold cyan]")
+    console.print(f"[bold]Total Nodes:[/bold] {dlg.graph.number_of_nodes()}")
+    console.print(f"[bold]Total Edges:[/bold] {dlg.graph.number_of_edges()}")
+    
+    console.print(f"\n[bold green]Sources (Entry Points):[/bold green]")
+    for s in sources[:20]:
+        console.print(f" - {s}")
+    if len(sources) > 20:
+        console.print(f" ... and {len(sources) - 20} more.")
+        
+    console.print(f"\n[bold red]Sinks (Exit Points):[/bold red]")
+    for s in sinks[:20]:
+        console.print(f" - {s}")
+    if len(sinks) > 20:
+        console.print(f" ... and {len(sinks) - 20} more.")
+
+@cli.command()
+@click.argument('node')
+def blast_radius(node):
+    """Shows all downstream dependents of a specific node."""
+    import json
+    import networkx as nx
+    from src.graph.lineage_graph import DataLineageGraph
+    
+    graph_path = ".cartography/lineage_graph.json"
+    if not os.path.exists(graph_path):
+        console.print(f"[bold red]Lineage graph not found at {graph_path}.[/bold red]")
+        return
+        
+    with open(graph_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        
+    dlg = DataLineageGraph(nx.node_link_graph(data))
+    downstream = dlg.blast_radius(node)
+    
+    console.print(f"\n[bold yellow]Blast Radius for {node}:[/bold yellow]")
+    if not downstream:
+        console.print("No downstream dependents found.")
+    else:
+        for d in downstream:
+            console.print(f" - {d}")
+        console.print(f"\n[bold]Total Impacted Nodes:[/bold] {len(downstream)}")
+
+@cli.command()
 def query():
     """Interactive mode for querying the parsed codebase context."""
     console.print("[yellow]Query mode (Navigator Agent) is not yet implemented.[/yellow]")

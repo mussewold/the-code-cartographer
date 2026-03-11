@@ -2,11 +2,13 @@ import os
 from typing import List
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
 from src.agents.surveyor import Surveyor
+from src.agents.hydrologist import HydrologistAgent
 from src.graph.knowledge_graph import KnowledgeGraph
 
 class Orchestrator:
     def __init__(self):
         self.surveyor = Surveyor()
+        self.hydrologist = HydrologistAgent()
         self.knowledge_graph = KnowledgeGraph()
 
     def run_pipeline(self, target_path: str):
@@ -28,6 +30,7 @@ class Orchestrator:
                         python_files.append(os.path.join(root, file))
 
         output_graph_path = os.path.join(".cartography", "module_graph.json")
+        lineage_graph_path = os.path.join(".cartography", "lineage_graph.json")
 
         if not python_files:
             return output_graph_path
@@ -69,7 +72,18 @@ class Orchestrator:
                 
                 progress.advance(analyze_task)
                 
-        # 4. Save graph (computes PageRank and SCC internally)
+        # 4. Analyze data lineage with Hydrologist
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}")
+        ) as progress:
+            hydrologist_task = progress.add_task("[cyan]Mapping data lineage...", total=None)
+            self.hydrologist.graph = self.knowledge_graph.graph
+            self.hydrologist.analyze()
+            self.hydrologist.save_lineage_graph(lineage_graph_path)
+            progress.update(hydrologist_task, completed=1)
+
+        # 5. Save graph (computes PageRank and SCC internally)
         self.knowledge_graph.save_module_graph(output_graph_path)
         
         return output_graph_path
