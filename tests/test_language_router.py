@@ -1,4 +1,7 @@
 import pytest
+import warnings
+
+warnings.filterwarnings("ignore", category=FutureWarning, module="tree_sitter")
 from src.analyzers.tree_sitter_analyzer import LanguageRouter
 
 @pytest.fixture

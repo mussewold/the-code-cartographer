@@ -1,6 +1,10 @@
 import os
+import subprocess
 import logging
-from typing import List
+import warnings
+from typing import List, Dict, Any
+
+warnings.filterwarnings("ignore", category=FutureWarning, module="tree_sitter")
 
 from tree_sitter_languages import get_language
 try:
@@ -54,6 +58,79 @@ class Surveyor:
             self._analyze_python(tree, content, module_node, base_module)
             
         return module_node
+
+    def extract_git_velocity(self, path: str, days: int = 30) -> Dict[str, Dict[str, Any]]:
+        """
+        Parses git log output to compute change frequency per file.
+        Retrieves the top 20% of files that contain 80% (or more) of all cumulative changes.
+        Returns a mapping: filepath -> {"commits": int, "is_core": bool}
+        """
+        abs_target_path = os.path.abspath(path)
+        repo_dir = abs_target_path if os.path.isdir(abs_target_path) else os.path.dirname(abs_target_path)
+        
+        if not os.path.exists(os.path.join(repo_dir, ".git")):
+            # If not a git repo, go up until find .git or root
+            curr_dir = repo_dir
+            while curr_dir and curr_dir != "/":
+                if os.path.exists(os.path.join(curr_dir, ".git")):
+                    repo_dir = curr_dir
+                    break
+                curr_dir = os.path.dirname(curr_dir)
+
+        if not os.path.exists(os.path.join(repo_dir, ".git")):
+            logger.warning(f"No .git directory found for path: {path}")
+            return {}
+
+        cmd = [
+            "git", "log", f"--since={days} days ago", "--name-only", "--pretty=format:"
+        ]
+
+        try:
+            result = subprocess.run(cmd, cwd=repo_dir, capture_output=True, text=True, check=True)
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Git command failed: {e}")
+            return {}
+
+        # Parse output
+        lines = result.stdout.strip().split("\n")
+        file_counts = {}
+        for line in lines:
+            if not line:
+                continue
+            
+            # git log returns relative path from git root
+            abs_path = os.path.abspath(os.path.join(repo_dir, line))
+            
+            # Try to match to requested path structure
+            if abs_target_path in abs_path or os.path.commonpath([abs_target_path, abs_path]) == abs_target_path:
+               # Only count if the modified file is within the requested analysis path
+               file_counts[abs_path] = file_counts.get(abs_path, 0) + 1
+
+        if not file_counts:
+            return {}
+
+        # 80/20 Rule Implementation
+        sorted_files = sorted(file_counts.items(), key=lambda x: x[1], reverse=True)
+        total_commits = sum(count for _, count in sorted_files)
+        target_commits = total_commits * 0.8
+
+        cumulative_commits = 0
+        velocity_data = {}
+        
+        # Determine the core based on accumulating up to 80% of all changes
+        for filepath, count in sorted_files:
+            cumulative_commits += count
+            is_core = cumulative_commits <= target_commits
+            # Edge case buffer: include the file that crosses the 80% threshold
+            if not is_core and cumulative_commits - count < target_commits:
+                is_core = True
+                
+            velocity_data[filepath] = {
+                "commits": count,
+                "is_core": is_core
+            }
+
+        return velocity_data
 
     def _resolve_import(self, base_module: str, relative_name: str) -> str:
         """Resolves relative import paths to absolute module paths."""

@@ -10,3 +10,5 @@ class ModuleNode(BaseModel):
     functions: List[str] = Field(default_factory=list)
     loc: int = 0
     complexity: int = 0
+    git_commits: int = 0
+    is_high_velocity: bool = False

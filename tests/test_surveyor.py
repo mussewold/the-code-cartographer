@@ -76,3 +76,30 @@ def _private_function():
         
     finally:
         os.chdir(original_cwd)
+
+from unittest.mock import patch, Mock
+
+def test_extract_git_velocity(surveyor, tmp_path):
+    # Mock subprocess.run to return a fixed git log output
+    mocked_git_output = "src/main.py\nsrc/utils.py\nsrc/main.py\nsrc/main.py\nsrc/models.py\n"
+    
+    with patch('subprocess.run') as mock_run:
+        mock_run.return_value = Mock(stdout=mocked_git_output)
+        
+        # Create fake directory structure so os.path checks pass
+        src_dir = tmp_path / "src"
+        src_dir.mkdir()
+        (tmp_path / ".git").mkdir() # Fake root
+    
+        velocity_data = surveyor.extract_git_velocity(str(src_dir))
+        
+        # We expect: main.py (3), utils.py (1), models.py (1). Total commits = 5.
+        # 80% of 5 = 4.
+        # main.py provides 3 commits (cumulative 3 <= 4). Still need 1 more.
+        # next is either utils or models (1 commit). 3 + 1 = 4 (cumulative <= 4).
+        # So main.py and one other file should be in the core. The third file will be false but edge case buffer makes it True for the one that crosses it.
+        
+        abs_main = os.path.abspath(os.path.join(tmp_path, "src/main.py"))
+        assert abs_main in velocity_data
+        assert velocity_data[abs_main]["commits"] == 3
+        assert velocity_data[abs_main]["is_core"] is True

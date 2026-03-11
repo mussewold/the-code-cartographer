@@ -32,7 +32,18 @@ class Orchestrator:
         if not python_files:
             return output_graph_path
 
-        # 2. Analyze modules and build graph with Rich progress feedback
+        # 2. Extract Git Velocity
+        velocity_data = {}
+        target_dir = os.path.dirname(target_path) if os.path.isfile(target_path) else target_path
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}")
+        ) as progress:
+            velocity_task = progress.add_task("[cyan]Extracting Git Velocity...", total=None)
+            velocity_data = self.surveyor.extract_git_velocity(target_dir, days=30)
+            progress.update(velocity_task, completed=1)
+
+        # 3. Analyze modules and build graph with Rich progress feedback
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -47,12 +58,18 @@ class Orchestrator:
                 # Run Surveyor agent
                 module_node = self.surveyor.analyze_module(file_path, base_path=target_path)
                 
+                # Enrich with velocity data
+                abs_file_path = os.path.abspath(file_path)
+                if abs_file_path in velocity_data:
+                    module_node.git_commits = velocity_data[abs_file_path]["commits"]
+                    module_node.is_high_velocity = velocity_data[abs_file_path]["is_core"]
+                
                 # Add to knowledge graph
                 self.knowledge_graph.add_module(module_node)
                 
                 progress.advance(analyze_task)
                 
-        # 3. Save graph
+        # 4. Save graph (computes PageRank and SCC internally)
         self.knowledge_graph.save_module_graph(output_graph_path)
         
         return output_graph_path

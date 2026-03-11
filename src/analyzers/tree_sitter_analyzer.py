@@ -1,9 +1,11 @@
 import logging
+import warnings
 from typing import Optional
 
 try:
     import tree_sitter
     from tree_sitter_languages import get_language
+    warnings.filterwarnings("ignore", category=FutureWarning, module="tree_sitter")
 except ImportError:
     tree_sitter = None
     get_language = None
