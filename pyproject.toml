@@ -6,5 +6,23 @@ dependencies = [
     "pydantic",
     "networkx",
     "langgraph",
-    "sqlglot"
+    "sqlglot",
+    "tree-sitter<0.22.0",
+    "tree-sitter-languages",
+    "pytest",
+    "click",
+    "rich",
+    "matplotlib",
+    "scipy>=1.17.1",
+    "pyvis>=0.3.2",
+    "graphviz>=0.21",
+    "pyyaml"
+]
+
+[project.scripts]
+cartographer = "src.cli:cli"
+
+[tool.pytest.ini_options]
+pythonpath = [
+  "."
 ]
