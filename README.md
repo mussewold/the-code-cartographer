@@ -1,83 +1,266 @@
 # 🗺️ The Code Cartographer
 
-**The Code Cartographer** is a powerful static analysis tool designed to map data flow and lineage across complex, multi-language codebases. It specializes in bridging the gap between SQL (dbt, procedural), Python data scripts, and Airflow orchestration to give you a unified view of your data's journey.
+**The Code Cartographer** is a static analysis tool that maps **data
+lineage and data flow** across complex multi-language data platforms. It
+bridges the gap between **SQL pipelines, Python data scripts, and
+Airflow orchestration**, producing a unified knowledge graph of your
+data ecosystem.
 
-## 🚀 Key Features
+This tool helps data engineers and platform teams **understand
+dependencies, analyze impact, and visualize data pipelines** across
+their codebases.
 
-- **🔍 Unified Data Lineage**: Automatically extracts relationships between database tables, S3 buckets, local files, and Airflow tasks.
-- **🛠️ Hybrid SQL Parsing**: Intelligent parsing that handles complex Jinja templates and dbt-specific macros (`ref`, `source`) alongside standard SQL lineage.
-- **🐍 Python Dataflow Analysis**: Uses Tree-sitter to identify I/O operations (Pandas, Spark, etc.) and link them to your datasets.
-- **🌬️ Airflow & dbt Integration**: Understands Airflow task dependencies (`>>`) and dbt schema definitions to build a complete topological map.
-- **💥 Impact Analysis (Blast Radius)**: Quickly identify all downstream dependents of a dataset change to prevent breaking changes.
-- **📊 Interactive Visualization**: Generate interactive HTML graphs (Pyvis) or hierarchical PNGs (Graphviz) to explore your architecture.
+---
 
-## 📦 Installation
+# 🚀 Key Features
 
-Ensure you have [uv](https://github.com/astral-sh/uv) installed, then:
+## 🔍 Unified Data Lineage
+
+Automatically extracts relationships between:
+
+- Database tables
+- S3 buckets
+- Local files
+- Airflow tasks
+- Python data pipelines
+
+All dependencies are combined into a **single lineage graph**.
+
+---
+
+## 🛠 Hybrid SQL Parsing
+
+Handles complex SQL environments including:
+
+- dbt models
+- Jinja templating
+- dbt macros such as `ref()` and `source()`
+
+It also supports traditional SQL lineage extraction.
+
+---
+
+## 🐍 Python Dataflow Analysis
+
+Uses **Tree-sitter AST parsing** to analyze Python scripts and detect:
+
+- Pandas reads/writes
+- Spark operations
+- File IO
+- Database interactions
+
+This allows the system to link Python transformations to datasets.
+
+---
+
+## 🌬 Airflow & dbt Awareness
+
+Understands orchestration structures such as:
+
+- Airflow DAG task dependencies (`>>`)
+- dbt model relationships
+- Configuration-driven pipelines
+
+This enables building a **complete topological representation of the
+pipeline architecture**.
+
+---
+
+## 💥 Impact Analysis (Blast Radius)
+
+Determine downstream impact of modifying any dataset or task.
+
+Example:
+
+If table A changes → what breaks?
+
+The Cartographer identifies all **dependent nodes in the lineage
+graph**.
+
+---
+
+## 📊 Interactive Visualization
+
+Generate visual representations of your data platform:
+
+- Interactive HTML Graphs (Pyvis)
+- Hierarchical Lineage Graphs (Graphviz)
+
+These help engineers explore the system visually.
+
+---
+
+# 📦 Installation
+
+This project uses **uv** for dependency management.
+
+### Install uv
 
 ```bash
-# Clone the repository
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+or
+
+```bash
+pip install uv
+```
+
+### Clone the Repository
+
+```bash
 git clone https://github.com/mussewold/the-code-cartographer.git
 cd the-code-cartographer
+```
 
-# Setup dependencies
+### Install Dependencies
+
+```bash
 uv sync
 ```
 
-## 🛠️ Usage
+---
 
-### 1. Analyze a Codebase
+# 🛠 Usage
 
-Point the cartographer at a local directory or a GitHub URL.
+## Analyze a Codebase
 
 ```bash
 uv run python src/cli.py analyze --path https://github.com/mitodl/ol-data-platform
 ```
 
-### 2. High-Level Insights
+or
 
-Get a summary of your data entry points (Sources) and terminal outputs (Sinks).
+```bash
+uv run python src/cli.py analyze --path ./my-data-repo
+```
+
+---
+
+## Lineage Summary
 
 ```bash
 uv run python src/cli.py lineage-summary
 ```
 
-### 3. Impact Analysis (Blast Radius)
+Outputs:
 
-Find exactly what will be affected if you modify a specific table or task.
+- Source datasets
+- Terminal datasets
+- Pipeline overview
+
+---
+
+## Blast Radius Analysis
 
 ```bash
 uv run python src/cli.py blast-radius "db://stg_orders"
 ```
 
-### 4. Visualization
+Returns **all downstream dependencies**.
 
-Explore the codebase visually.
+---
+
+# 📊 Visualization
+
+## Interactive Graph
 
 ```bash
-# Interactive HTML Graph
 uv run python src/cli.py visualize
-
-# Hierarchical Lineage PNG
-uv run python src/cli.py visualize-lineage
 ```
 
-## 🏗️ Architecture
-
-The Cartographer is built with a modular analyzer pattern orchestrated by the `DataLineageGraph`:
-
-- **Modular Analyzers**: Separate logic for `SQL`, `Python`, and `DAG/Config` parsing located in `src/analyzers/`.
-- **Centralized Graph**: The `DataLineageGraph` class Coordinates parsing and provides advanced graph analytics (Sources, Sinks, Descendants).
-- **Extensible Pipeline**: The `Orchestrator` manages the end-to-end flow from Git cloning to final graph persistence.
-
-## 🧪 Testing
-
-Run the analytical verification suite:
+## Hierarchical Graph
 
 ```bash
-uv run python tests/test_lineage_analytics.py
+uv run python src/cli.py visualize-lineage
 ```
 
 ---
 
-_Mapping the digital wilderness, one dataset at a time._
+# 🏗 Architecture
+
+Core modules:
+
+- **Orchestrator** → Controls analysis workflow
+- **Analyzers** → SQL, Python, DAG parsing
+- **Agents** → Higher-level reasoning modules
+- **Graph Engine** → Stores lineage relationships
+- **Models** → Node definitions
+
+Directory overview:
+
+    the-code-cartographer/
+    ├── README.md
+    ├── pyproject.toml
+    ├── query_test.py
+    ├── RECONNAISSANCE.md
+    ├── test_python_dataflow.py
+    ├── src/
+    │   ├── cli.py
+    │   ├── orchestrator.py
+    │   ├── agents/
+    │   │   ├── archivist.py
+    │   │   ├── hydrologist.py
+    │   │   ├── navigator.py
+    │   │   ├── semanticist.py
+    │   │   └── surveyor.py
+    │   ├── analyzers/
+    │   │   ├── dag_config_parser.py
+    │   │   ├── python_dataflow.py
+    │   │   ├── sql_lineage.py
+    │   │   └── tree_sitter_analyzer.py
+    │   ├── graph/
+    │   │   ├── knowledge_graph.py
+    │   │   └── lineage_graph.py
+    │   └── models/
+    │       ├── __init__.py
+    │       └── nodes.py
+    ├── tests/
+    │   ├── test_hydrologist.py
+    │   ├── test_knowledge_graph.py
+    │   ├── test_language_router.py
+    │   ├── test_lineage_analytics.py
+    │   └── test_surveyor.py
+    └── .cartography/
+        ├── cartography_trace.jsonl
+        ├── CODEBASE.md
+        └── onboarding_brief.md
+
+---
+
+# 🧪 Testing
+
+Run tests:
+
+```bash
+uv run pytest
+```
+
+---
+
+# 🎯 Use Cases
+
+- Data platform documentation
+- Pipeline dependency discovery
+- Impact analysis before schema changes
+- Debugging broken pipelines
+- Data governance
+- Onboarding new engineers
+
+---
+
+# 🔮 Future Improvements
+
+Planned enhancements:
+
+- Spark DAG extraction
+- Snowflake / BigQuery metadata integration
+- OpenLineage compatibility
+- Incremental graph updates
+- Web UI for lineage exploration
+
+---
+
+# 📜 License
+
+MIT License
